@@ -1,5 +1,13 @@
-// This is a Vercel serverless function
+// Vercel serverless function using Upstash Redis
 // Place this file in /api/leaderboard.js
+
+import { Redis } from '@upstash/redis';
+
+// Initialize Redis client
+const redis = new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN,
+});
 
 export default async function handler(req, res) {
     // Enable CORS
@@ -16,10 +24,6 @@ export default async function handler(req, res) {
         return;
     }
 
-    // For this simple implementation, we'll use Vercel KV (Redis)
-    // You'll need to set this up in your Vercel dashboard
-    const kv = require('@vercel/kv');
-
     if (req.method === 'GET') {
         try {
             const { date } = req.query;
@@ -28,7 +32,7 @@ export default async function handler(req, res) {
             }
 
             const key = `leaderboard:${date}`;
-            const scores = await kv.get(key) || [];
+            const scores = await redis.get(key) || [];
             
             // Sort by score (ascending, since lower is better)
             scores.sort((a, b) => a.score - b.score);
@@ -49,7 +53,7 @@ export default async function handler(req, res) {
             }
 
             const key = `leaderboard:${date}`;
-            let scores = await kv.get(key) || [];
+            let scores = await redis.get(key) || [];
             
             // Check if player already submitted today
             const existingEntry = scores.find(entry => entry.name === name);
@@ -68,8 +72,8 @@ export default async function handler(req, res) {
                 });
             }
             
-            // Save back to KV store with 30 day expiration
-            await kv.set(key, scores, { ex: 60 * 60 * 24 * 30 });
+            // Save back to Redis with 30 day expiration (2592000 seconds)
+            await redis.set(key, scores, { ex: 2592000 });
             
             // Sort and return updated leaderboard
             scores.sort((a, b) => a.score - b.score);
@@ -82,4 +86,4 @@ export default async function handler(req, res) {
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
-}// JavaScript Document
+}
