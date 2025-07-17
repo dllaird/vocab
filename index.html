@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vocab - Word Puzzle Game</title>
+    <link rel="stylesheet" href="homepage.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="homepage-container">
+        <!-- VOCAB title -->
+        <div class="title-tiles">
+            <div class="title-tile">V</div>
+            <div class="title-tile">O</div>
+            <div class="title-tile">C</div>
+            <div class="title-tile">A</div>
+            <div class="title-tile">B</div>
+        </div>
+        
+        <!-- Game board with menu buttons -->
+        <div class="game-board">
+            <div class="menu-buttons">
+                <a href="vocab.html" class="menu-button">PLAY</a>
+                <button class="menu-button" id="rules-btn">RULES</button>
+                <button class="menu-button" id="leaderboard-btn">SCORES</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rules Modal -->
+    <div id="rules-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>How to Play Vocab</h2>
+            <ul>
+                <li>You get 25 letters arranged in a 5×5 grid</li>
+                <li>Click on letters to form words (minimum 5 letters)</li>
+                <li>Click "Submit" to check if your word is valid</li>
+                <li>Valid words turn their tiles green</li>
+                <li>Use ALL 25 tiles to complete the puzzle</li>
+                <li>Click the shuffle button to rearrange tiles</li>
+                <li>Try to complete the puzzle using as few words as possible!</li>
+            </ul>
+            <p><strong>Daily Challenge:</strong> Everyone gets the same puzzle each day. Compare your score with friends!</p>
+            <p><strong>Tip:</strong> The puzzle is always solvable - there's at least one perfect solution!</p>
+        </div>
+    </div>
+
+    <!-- Leaderboard Modal -->
+    <div id="leaderboard-modal" class="modal">
+        <div class="modal-content">
+            <span class="close close-leaderboard">&times;</span>
+            <h2>Today's Leaderboard</h2>
+            <div id="leaderboard-list">
+                <div class="leaderboard-loading">Loading scores...</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="homepage.js"></script>
+</body>
+</html>

@@ -6,8 +6,12 @@
   },
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/vocab",
       "destination": "/vocab.html"
+    },
+    {
+      "source": "/",
+      "destination": "/index.html"
     }
   ]
 }

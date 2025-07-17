@@ -290,8 +290,8 @@ async function getLeaderboard() {
     }
 }
 
-function displayLeaderboard(scores, currentPlayerName = null) {
-    const leaderboardList = document.getElementById('leaderboard-list');
+function displayLeaderboard(scores, currentPlayerName = null, elementId = 'leaderboard-list') {
+    const leaderboardList = document.getElementById(elementId);
     
     if (!scores || scores.length === 0) {
         leaderboardList.innerHTML = '<div class="leaderboard-loading">No scores yet today. Be the first!</div>';
@@ -544,6 +544,7 @@ function submitWord() {
                 });
 
                 score++;
+                validWordsPlayed.push(word);
 
                 // Add to dictionary with typewriter effect
                 const definition = entry.defs ? entry.defs[0].split('\t').pop() : "No definition available.";
@@ -655,9 +656,30 @@ function showCompletionModal() {
         document.getElementById('submit-score-section').innerHTML = 
             `<p>You've already submitted your score today!</p>
              <p>Your score: <strong>${todayData.score}</strong> as <strong>${todayData.playerName}</strong></p>`;
+        // Show leaderboard automatically if already submitted
+        loadCompletionLeaderboard();
+    } else {
+        // Focus on name input for new completion
+        setTimeout(() => {
+            const nameInput = document.getElementById('player-name');
+            if (nameInput) {
+                nameInput.focus();
+            }
+        }, 300);
     }
     
     modal.style.display = 'block';
+}
+
+async function loadCompletionLeaderboard() {
+    try {
+        const scores = await getLeaderboard();
+        const todayData = getStoredData()[getTodayDateString()];
+        displayLeaderboard(scores, todayData?.playerName, 'completion-leaderboard-list');
+        document.getElementById('completion-leaderboard').style.display = 'block';
+    } catch (error) {
+        console.error('Error loading completion leaderboard:', error);
+    }
 }
 
 function checkGameCompletion() {
@@ -789,6 +811,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('submit-score-section').innerHTML = 
                         `<p>Score submitted successfully!</p>
                          <p>Your score: <strong>${score}</strong></p>`;
+                    // Load and show leaderboard after submission
+                    loadCompletionLeaderboard();
                 }, 1500);
             } catch (error) {
                 submitMessage.textContent = 'Failed to submit score. Please try again.';
@@ -796,6 +820,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 submitScoreBtn.disabled = false;
             }
         };
+    }
+
+    // Allow Enter key to submit score
+    if (playerNameInput) {
+        playerNameInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && submitScoreBtn) {
+                submitScoreBtn.click();
+            }
+        });
     }
 
     // Close completion modal

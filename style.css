@@ -761,3 +761,138 @@ h3 {
     margin-top: 0;
     color: #333;
 }
+
+/* Add these styles to your existing style.css file */
+
+/* Submit score section */
+.submit-score-section {
+    background-color: #f0f8ff;
+    padding: 20px;
+    border-radius: 10px;
+    margin: 20px 0;
+    border: 2px solid #4A90E2;
+}
+
+.submit-score-section h3 {
+    color: #333;
+    margin-bottom: 15px;
+}
+
+#player-name {
+    width: 200px;
+    padding: 10px;
+    font-size: 16px;
+    border: 2px solid #4A90E2;
+    border-radius: 5px;
+    margin-right: 10px;
+}
+
+#player-name:focus {
+    outline: none;
+    border-color: #357ABD;
+    box-shadow: 0 0 5px rgba(74, 144, 226, 0.3);
+}
+
+#submit-score-btn {
+    padding: 10px 30px;
+    font-size: 16px;
+    background-color: #4A90E2;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#submit-score-btn:hover:not(:disabled) {
+    background-color: #357ABD;
+}
+
+#submit-score-btn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+#submit-message {
+    margin-top: 10px;
+    font-size: 14px;
+}
+
+#submit-message.error {
+    color: #d32f2f;
+}
+
+/* Completion leaderboard */
+.completion-leaderboard {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    margin: 20px 0;
+    border: 2px solid #ddd;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.completion-leaderboard h3 {
+    color: #333;
+    margin-top: 0;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.leaderboard-list {
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+/* Leaderboard entries (shared with standalone modal) */
+.leaderboard-entry.current-player {
+    background-color: #e3f2fd !important;
+    border: 2px solid #4A90E2;
+    font-weight: bold;
+}
+
+/* Scrollbar styling for leaderboard */
+.leaderboard-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.leaderboard-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.leaderboard-list::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.leaderboard-list::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Adjust completion modal content for new layout */
+.completion-content {
+    max-height: 90vh;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #888 #f1f1f1;
+}
+
+.completion-content::-webkit-scrollbar {
+    width: 10px;
+}
+
+.completion-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 5px;
+}
+
+.completion-content::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 5px;
+}
+
+.completion-content::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
