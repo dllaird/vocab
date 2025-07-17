@@ -70,6 +70,23 @@
             <div class="completion-stats">
                 You solved the puzzle in <span id="words-used"></span> words!
             </div>
+            
+            <!-- Submit Score Section -->
+            <div id="submit-score-section" class="submit-score-section">
+                <h3>Enter Your Name for the Leaderboard</h3>
+                <input type="text" id="player-name" placeholder="Your name" maxlength="20">
+                <button id="submit-score-btn">Submit Score</button>
+                <div id="submit-message"></div>
+            </div>
+            
+            <!-- Leaderboard Section -->
+            <div id="completion-leaderboard" class="completion-leaderboard" style="display: none;">
+                <h3>Today's Leaderboard</h3>
+                <div id="completion-leaderboard-list" class="leaderboard-list">
+                    <div class="leaderboard-loading">Loading scores...</div>
+                </div>
+            </div>
+            
             <div class="perfect-solution">
                 <h3>Perfect Solution</h3>
                 <div id="perfect-words"></div>
