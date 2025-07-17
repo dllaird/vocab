@@ -1,0 +1,13 @@
+{
+  "functions": {
+    "api/leaderboard.js": {
+      "maxDuration": 10
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/vocab.html"
+    }
+  ]
+}

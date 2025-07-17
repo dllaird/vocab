@@ -1,0 +1,19 @@
+{
+  "name": "daily-vocab-game",
+  "version": "1.0.0",
+  "description": "A daily word puzzle game like Wordle",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "keywords": ["game", "word", "puzzle", "daily"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@vercel/kv": "^1.0.0"
+  },
+  "devDependencies": {
+    "vercel": "^32.0.0"
+  }
+}
