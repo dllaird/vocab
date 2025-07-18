@@ -1,14 +1,9 @@
-// Debug version with extensive logging
+// Stable version with better error handling and data persistence
 // This file should be at: /api/leaderboard.js
 
-module.exports = async (req, res) => {
-    console.log('Leaderboard function called:', req.method);
-    console.log('Environment check:', {
-        hasUrl: !!process.env.UPSTASH_REDIS_REST_URL,
-        hasToken: !!process.env.UPSTASH_REDIS_REST_TOKEN,
-        urlPrefix: process.env.UPSTASH_REDIS_REST_URL?.substring(0, 20)
-    });
+const { Redis } = require('@upstash/redis');
 
+module.exports = async (req, res) => {
     // Enable CORS
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -22,127 +17,159 @@ module.exports = async (req, res) => {
         return res.status(200).end();
     }
 
-    // Try a simple in-memory storage first to test if the function works at all
-    if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
-        console.log('WARNING: Redis not configured, using in-memory storage');
-        
-        // Simple in-memory fallback for testing
-        global.leaderboardData = global.leaderboardData || {};
-        
-        if (req.method === 'GET') {
-            const { date } = req.query;
-            const scores = global.leaderboardData[date] || [];
-            return res.status(200).json(scores);
-        }
-        
-        if (req.method === 'POST') {
-            const { name, score, date } = req.body;
-            console.log('POST data received:', { name, score, date });
-            
-            if (!name || !score || !date) {
-                return res.status(400).json({ error: 'Name, score, and date required' });
-            }
-            
-            if (!global.leaderboardData[date]) {
-                global.leaderboardData[date] = [];
-            }
-            
-            const scores = global.leaderboardData[date];
-            const existingEntry = scores.find(entry => entry.name === name);
-            
-            if (existingEntry) {
-                if (score < existingEntry.score) {
-                    existingEntry.score = score;
-                    existingEntry.timestamp = new Date().toISOString();
-                }
-            } else {
-                scores.push({
-                    name,
-                    score,
-                    timestamp: new Date().toISOString()
-                });
-            }
-            
-            scores.sort((a, b) => a.score - b.score);
-            return res.status(200).json({ success: true, leaderboard: scores });
-        }
-        
-        return res.status(405).json({ error: 'Method not allowed' });
-    }
-
-    // If Redis is configured, use it
+    // Initialize Redis client
+    let redis;
     try {
-        const { Redis } = require('@upstash/redis');
-        
-        const redis = new Redis({
+        if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
+            throw new Error('Missing Redis configuration');
+        }
+
+        redis = new Redis({
             url: process.env.UPSTASH_REDIS_REST_URL,
             token: process.env.UPSTASH_REDIS_REST_TOKEN,
         });
+    } catch (error) {
+        console.error('Redis initialization error:', error);
+        return res.status(500).json({ error: 'Database configuration error' });
+    }
 
-        if (req.method === 'GET') {
+    if (req.method === 'GET') {
+        try {
             const { date } = req.query;
             if (!date) {
                 return res.status(400).json({ error: 'Date parameter required' });
             }
 
             const key = `leaderboard:${date}`;
-            console.log('GET request for key:', key);
+            console.log('Fetching leaderboard for:', key);
             
-            try {
-                const scores = await redis.get(key) || [];
-                scores.sort((a, b) => a.score - b.score);
-                return res.status(200).json(scores);
-            } catch (redisError) {
-                console.error('Redis GET error:', redisError);
-                return res.status(500).json({ error: 'Database read error', details: redisError.message });
+            // Get the data
+            const data = await redis.get(key);
+            console.log('Raw data from Redis:', data);
+            
+            // Parse the data - handle both string and object responses
+            let scores = [];
+            if (data) {
+                if (typeof data === 'string') {
+                    try {
+                        scores = JSON.parse(data);
+                    } catch (e) {
+                        console.error('Failed to parse string data:', e);
+                        scores = [];
+                    }
+                } else if (Array.isArray(data)) {
+                    scores = data;
+                } else {
+                    console.error('Unexpected data type:', typeof data);
+                    scores = [];
+                }
             }
-        }
-
-        if (req.method === 'POST') {
-            const { name, score, date } = req.body;
-            console.log('POST request:', { name, score, date });
             
-            if (!name || !score || !date) {
-                return res.status(400).json({ error: 'Name, score, and date required' });
+            // Ensure scores is an array
+            if (!Array.isArray(scores)) {
+                console.error('Scores is not an array:', scores);
+                scores = [];
+            }
+            
+            // Sort by score (ascending, since lower is better)
+            scores.sort((a, b) => a.score - b.score);
+            
+            console.log('Returning scores:', scores.length, 'entries');
+            return res.status(200).json(scores);
+        } catch (error) {
+            console.error('Error fetching leaderboard:', error);
+            return res.status(500).json({ error: 'Failed to fetch leaderboard' });
+        }
+    }
+
+    if (req.method === 'POST') {
+        try {
+            const { name, score, date } = req.body;
+            
+            console.log('Received submission:', { name, score, date });
+            
+            if (!name || typeof score !== 'number' || !date) {
+                return res.status(400).json({ error: 'Name (string), score (number), and date (string) required' });
             }
 
             const key = `leaderboard:${date}`;
             
-            try {
-                let scores = await redis.get(key) || [];
-                
-                const existingEntry = scores.find(entry => entry.name === name);
-                if (existingEntry) {
-                    if (score < existingEntry.score) {
-                        existingEntry.score = score;
-                        existingEntry.timestamp = new Date().toISOString();
+            // Get existing scores
+            const existingData = await redis.get(key);
+            let scores = [];
+            
+            // Parse existing data
+            if (existingData) {
+                if (typeof existingData === 'string') {
+                    try {
+                        scores = JSON.parse(existingData);
+                    } catch (e) {
+                        console.error('Failed to parse existing data:', e);
+                        scores = [];
                     }
-                } else {
-                    scores.push({
-                        name,
-                        score,
-                        timestamp: new Date().toISOString()
-                    });
+                } else if (Array.isArray(existingData)) {
+                    scores = existingData;
                 }
-                
-                await redis.set(key, scores, { ex: 2592000 });
-                scores.sort((a, b) => a.score - b.score);
-                
-                return res.status(200).json({ success: true, leaderboard: scores });
-            } catch (redisError) {
-                console.error('Redis SET error:', redisError);
-                return res.status(500).json({ error: 'Database write error', details: redisError.message });
             }
+            
+            // Ensure scores is an array
+            if (!Array.isArray(scores)) {
+                console.error('Existing scores is not an array, resetting');
+                scores = [];
+            }
+            
+            // Check if player already submitted today
+            const existingEntryIndex = scores.findIndex(entry => entry.name === name);
+            
+            if (existingEntryIndex !== -1) {
+                // Update if new score is better
+                if (score < scores[existingEntryIndex].score) {
+                    scores[existingEntryIndex].score = score;
+                    scores[existingEntryIndex].timestamp = new Date().toISOString();
+                    console.log('Updated existing entry for:', name);
+                } else {
+                    console.log('Existing score is better, not updating');
+                }
+            } else {
+                // Add new entry
+                const newEntry = {
+                    name: name.substring(0, 50), // Limit name length
+                    score: score,
+                    timestamp: new Date().toISOString()
+                };
+                scores.push(newEntry);
+                console.log('Added new entry for:', name);
+            }
+            
+            // Sort scores
+            scores.sort((a, b) => a.score - b.score);
+            
+            // Limit to top 100 scores to prevent data from growing too large
+            if (scores.length > 100) {
+                scores = scores.slice(0, 100);
+            }
+            
+            // Save back to Redis
+            // Use JSON.stringify to ensure consistent storage format
+            const dataToStore = JSON.stringify(scores);
+            console.log('Storing data, length:', dataToStore.length);
+            
+            // Set with 7 day expiration (604800 seconds) instead of 30 days
+            // This ensures data doesn't disappear during the day but doesn't accumulate forever
+            await redis.set(key, dataToStore, { ex: 604800 });
+            
+            console.log('Successfully saved scores, total entries:', scores.length);
+            
+            return res.status(200).json({ 
+                success: true, 
+                leaderboard: scores,
+                totalEntries: scores.length 
+            });
+        } catch (error) {
+            console.error('Error saving score:', error);
+            return res.status(500).json({ error: 'Failed to save score' });
         }
-
-        return res.status(405).json({ error: 'Method not allowed' });
-        
-    } catch (error) {
-        console.error('Function error:', error);
-        return res.status(500).json({ 
-            error: 'Server error', 
-            message: error.message,
-            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-        });
     }
+
+    return res.status(405).json({ error: 'Method not allowed' });
 };
