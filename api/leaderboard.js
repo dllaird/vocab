@@ -3,12 +3,6 @@
 
 const { Redis } = require('@upstash/redis');
 
-// Initialize Redis client
-const redis = new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN,
-});
-
 module.exports = async (req, res) => {
     // Enable CORS
     res.setHeader('Access-Control-Allow-Credentials', true);
@@ -24,6 +18,29 @@ module.exports = async (req, res) => {
         return;
     }
 
+    // Initialize Redis client inside the handler to ensure env vars are loaded
+    let redis;
+    try {
+        // Debug: Log to see if env vars are available
+        console.log('Initializing Redis with URL:', process.env.UPSTASH_REDIS_REST_URL ? 'URL exists' : 'URL missing');
+        console.log('Token exists:', process.env.UPSTASH_REDIS_REST_TOKEN ? 'Yes' : 'No');
+        
+        if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
+            throw new Error('Missing Redis configuration');
+        }
+
+        redis = new Redis({
+            url: process.env.UPSTASH_REDIS_REST_URL,
+            token: process.env.UPSTASH_REDIS_REST_TOKEN,
+        });
+    } catch (error) {
+        console.error('Redis initialization error:', error);
+        return res.status(500).json({ 
+            error: 'Database configuration error',
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+
     if (req.method === 'GET') {
         try {
             const { date } = req.query;
@@ -32,6 +49,8 @@ module.exports = async (req, res) => {
             }
 
             const key = `leaderboard:${date}`;
+            console.log('Fetching leaderboard for key:', key);
+            
             const scores = await redis.get(key) || [];
             
             // Sort by score (ascending, since lower is better)
@@ -47,6 +66,8 @@ module.exports = async (req, res) => {
     if (req.method === 'POST') {
         try {
             const { name, score, date } = req.body;
+            
+            console.log('Received submission:', { name, score, date });
             
             if (!name || !score || !date) {
                 return res.status(400).json({ error: 'Name, score, and date required' });
