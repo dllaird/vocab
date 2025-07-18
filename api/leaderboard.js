@@ -1,7 +1,7 @@
 // Vercel serverless function using Upstash Redis
-// Place this file in /api/leaderboard.js
+// This file should be at: /api/leaderboard.js
 
-import { Redis } from '@upstash/redis';
+const { Redis } = require('@upstash/redis');
 
 // Initialize Redis client
 const redis = new Redis({
@@ -9,7 +9,7 @@ const redis = new Redis({
     token: process.env.UPSTASH_REDIS_REST_TOKEN,
 });
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
     // Enable CORS
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -86,4 +86,4 @@ export default async function handler(req, res) {
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
-}
+};
